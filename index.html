@@ -3,16 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Gestión de Usuarios</title>
 </head>
 <body>
-    <h1>Api visual</h1>
-    <form action="">
-        <input type="text">
-        <input type="text">
-        
 
-        <button type="submit">
-    </form>
+    <div>
+        <h2>Crear Usuario</h2>
+        <form id="createUserForm">
+            <input type="number" id="id" placeholder="ID" required />
+            <input type="text" id="name" placeholder="Nombre" required />
+            <input type="email" id="email" placeholder="Email" required />
+            <button type="submit">Crear Usuario</button>
+        </form>
+    </div>
+
+    <div>
+        <h2>Lista de Usuarios</h2>
+        <button id="fetchUsers">Obtener Usuarios</button>
+        <ul id="userList"></ul>
+    </div>
+
+    <div>
+        <h2>Eliminar Usuario</h2>
+        <input type="number" id="deleteUserId" placeholder="ID del usuario a eliminar" />
+        <button id="deleteUser">Eliminar Usuario</button>
+    </div>
+
+    <div>
+        <h2>Actualizar Usuario</h2>
+        <form id="updateUserForm">
+            <input type="number" id="updateUserId" placeholder="ID del usuario" required />
+            <input type="text" id="updateUserName" placeholder="Nuevo nombre" />
+            <input type="email" id="updateUserEmail" placeholder="Nuevo correo" />
+            <button type="submit">Actualizar Usuario</button>
+        </form>
+    </div>
+    
+    <div>
+        <h2>Buscar Usuario por Correo</h2>
+        <input type="email" id="searchEmail" placeholder="Correo del usuario" />
+        <button id="searchUserByEmail">Buscar Usuario</button>
+        <div id="userResult"></div>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:4000/usuarios";
+
+        document.getElementById("createUserForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const id = document.getElementById("id").value;
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, name, email }),
+            });
+
+            const result = await response.json();
+            alert(result.mensaje);
+            document.getElementById("createUserForm").reset();
+        });
+
+        document.getElementById("fetchUsers").addEventListener("click", async () => {
+            const response = await fetch(API_URL);
+            const usuarios = await response.json();
+
+            const userList = document.getElementById("userList");
+            userList.innerHTML = "";
+            usuarios.forEach((usuario) => {
+                const li = document.createElement("li");
+                li.textContent = `ID: ${usuario.id}, Nombre: ${usuario.name}, Email: ${usuario.email}`;
+                userList.appendChild(li);
+            });
+        });
+
+        document.getElementById("deleteUser").addEventListener("click", async () => {
+            const userId = document.getElementById("deleteUserId").value;
+            if (!userId) {
+                alert("Por favor, ingresa un ID");
+                return;
+            }
+
+            const response = await fetch(`${API_URL}/${userId}`, { method: "DELETE" });
+            const result = await response.json();
+            alert(result.mensaje);
+        });
+
+        // Autorellenar datos del usuario en el formulario de actualización
+        document.getElementById("updateUserId").addEventListener("blur", async () => {
+            const id = document.getElementById("updateUserId").value;
+            if (!id) {
+                return; // No hacer nada si el campo está vacío
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/${id}`);
+                if (!response.ok) {
+                    throw new Error("Usuario no encontrado");
+                }
+
+                const usuario = await response.json();
+                document.getElementById("updateUserName").value = usuario.name || "";
+                document.getElementById("updateUserEmail").value = usuario.email || "";
+            } catch (error) {
+                alert(error.message);
+                document.getElementById("updateUserName").value = "";
+                document.getElementById("updateUserEmail").value = "";
+            }
+        });
+
+        document.getElementById("updateUserForm").addEventListener("submit", async (e) => {
+            e.preventDefault(); 
+
+            const id = document.getElementById("updateUserId").value;
+            const name = document.getElementById("updateUserName").value;
+            const email = document.getElementById("updateUserEmail").value;
+
+            if (!id) {
+                alert("Por favor, ingresa el ID del usuario a actualizar");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, email }),
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.mensaje || "Error al actualizar el usuario");
+                }
+
+                alert(result.mensaje);
+                document.getElementById("updateUserForm").reset();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+
+        document.getElementById("searchUserByEmail").addEventListener("click", async () => {
+            const email = document.getElementById("searchEmail").value;
+            if (!email) {
+                alert("Por favor, ingresa un correo");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/correo/${email}`);
+                if (!response.ok) {
+                    throw new Error("Usuario no encontrado");
+                }
+
+                const usuario = await response.json();
+                const userResult = document.getElementById("userResult");
+                userResult.innerHTML = `<p>ID: ${usuario.id}, Nombre: ${usuario.name}, Email: ${usuario.email}</p>`;
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    </script>
 </body>
 </html>
